@@ -1,7 +1,7 @@
 var mongoose = require('mongoose')
 var Schema = mongoose.Schema;
 var db = mongoose.connection;
-var dbUrl = 'mongodb://<dbuser>:<dbpassword>@ds021689.mlab.com:21689/dixa';
+var dbUrl = 'mongodb://hr:12345@ds025379.mlab.com:25379/humanresource112'
 
 var TeamSchema = new Schema({
 	name:{
@@ -14,28 +14,24 @@ var TeamSchema = new Schema({
 var Team = mongoose.model('Team',TeamSchema);
 db.on('error',function(){
 	console.log('there was an error communicating with the database');
-	mongoose.connect(dbUrl, function(err){
-		if(err){
-			return console.log('there was a problem ' +err);
+});
+function insertTeams(callback){
+			Team.create({
+				name:'Product Development'
+			},{
+				name:'Dev Ops'
+			},{
+				name:'Accounting'
+			},function(error, pd, devops, acct){
+				if(error){
+					return callback(error);
+				}else{
+					callback(null, pd,devops,acct);
+				}
+				
+			});
 		}
-		console.log('connected!');
-		//----make actual data instance.
-		var team = new Team({
-			name : 'Product Development'
-		})
-		team.save(function(error,data){
-			if(error){
-				console.log(error);
-			}else{
-				console.dir(data);
-			}
-			db.close();
-			process.exit();
-		})
-	})
-})
 
-	
 var EmployeeSchema = new Schema({
 	name:{
 		first: {
@@ -44,7 +40,7 @@ var EmployeeSchema = new Schema({
 		},
 		last: {
 			type: String,
-			required: trueP
+			required: true
 		}
 	},
 	team:{
@@ -64,3 +60,58 @@ var EmployeeSchema = new Schema({
 		}
 	}
 })
+var Employee = mongoose.model('Employee',EmployeeSchema);
+function insertEmployees(pd,devops,callback){
+	Employee.create({
+		name:{
+			first: 'John',
+			last: 'Adams'
+		},
+		team: pd._id,
+		address:{
+			lines:['2 Lincoln Memorial Cir Nw'],
+			zip: 20037
+		}
+	},{
+		name:{
+			first: 'Rachel',
+			last: 'Posner'
+		},
+		team: devops._id,
+		address:{
+			lines:['2 Lincoln Memorial Cir Nw'],
+			zip: 20037
+		}
+	},function(err){
+			callback(err);
+		})
+
+}		
+	
+mongoose.connect(dbUrl, function(err){
+		if(err){
+			return console.log('there was a problem ' +err);
+		}
+		console.log('connected!');
+		insertTeams(function(err, pd, devops, acct){
+			if(err){ 
+				return console.log(err);
+			}
+			insertEmployees(pd,devops,function(err){
+				if(err){
+					console.log(err);
+				}else{
+					console.log('database is saved!^o^!');
+				}
+				db.close();
+				process.exit();
+			})
+		})
+		//----make actual data instance.
+			
+})
+
+
+
+
+

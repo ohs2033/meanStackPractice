@@ -137,7 +137,7 @@ var findTeamName = function(callback){
 		if(err) {
 			console.error(err)
 		}
-		 console.log(data.team)
+		console.log(data.team)
 		callback();
 	})
 }

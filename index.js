@@ -1,45 +1,46 @@
-var http = require('http');
-var employeeService = require('./lib/employee.js');
-var dataGenerator  = require('./lib/dataGenerator.js');
-var staticFile = dataGenerator.staticFile('/public');
+var express = require('express');
+var path = require('path');//?
+var favicon = require('serve-favicon');
+var logger = require('morgan')//?
+var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
+require('./lib/connection');
 
-http.createServer(function(req,res){
-	var _url= req.url;
-	req.method = req.method.toUpperCase();
-	if(req.method !== 'GET'){
-		res.writeHead(501,{
-			'Content-type': 'text/plain'});
-		return res.end(req.method + ' is not implemented by this server.');
-	}
-	if(_url = /^\/employees$/i.exec(req.url)){
-		employeeService.getEmployees(function(error,data){
-			if(error){
-				dataGenerator.send500(data,res);
-				//500
-			}
-			dataGenerator.sendJson(data,res)
-			//200 and data.
-		})
-	}else if (_url = /^\/employees\/(\d+)$/i.exec(req.url)){
-		console.log(_url);
-		employeeService.getEmployee(_url,function(error,data){
-			if(error){
-				dataGenerator.send500(data,res);
-				//500
-			}
-			if(!data){
-				dataGenerator.send404(res)
-				//404
-			}
-			return dataGenerator.sendJson(data,res);
-			//200 and data.	
-		})
-	}else{
-		res.writeHead(200);
-		var _url = req.url;
-		staticFile(_url,res);
-		//200 and static file.
-	}
-}).listen(3000,'127.0.0.1').on('error',function(err){console.log(err);})
 
-console.log('server is on 127.0.0.1:3000');
+var employees = require('./routes/employee');
+var teams = require('./routes/team');
+
+// var employeeService = require('./lib/employee.js');
+// var dataGenerator  = require('./lib/dataGenerator.js');
+// var staticFile = dataGenerator.staticFile('/public');
+
+var app = express();
+
+app.use(logger('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser);
+app.use(express.static(path.join(__dirname,'public')))
+
+app.use(employees);
+app.use(teams);
+
+app.use(function(req,res,next){
+	var err = new Error('Not Found');
+	err.status = 404;
+	next(err);
+})
+
+if(app.get('env') ==='development'){
+	app.use(function(err,req,res,next){
+		res.status(err.status||500);
+		res.send({
+			message: err.message,
+			error:err
+		});
+	});
+}
+
+app.use(function(err,req,res,next){
+	res.status(err.status||500);
+})
